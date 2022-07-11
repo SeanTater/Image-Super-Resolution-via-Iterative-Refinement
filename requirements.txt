@@ -1,6 +1,5 @@
 torch>=1.6
 torchvision
-tensorboardx
 numpy
 pandas
 tqdm
@@ -9,4 +8,3 @@ opencv-python
 pillow
 tensorboardx
 wandb
-
