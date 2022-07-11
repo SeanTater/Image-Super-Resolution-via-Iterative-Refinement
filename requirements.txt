@@ -1,5 +1,6 @@
 torch>=1.6
 torchvision
+tensorboardx
 numpy
 pandas
 tqdm
