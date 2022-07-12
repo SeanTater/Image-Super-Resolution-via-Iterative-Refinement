@@ -14,7 +14,7 @@ class LRHRDataset(Dataset):
         self.data_len = data_len
         self.need_LR = need_LR
         self.split = split
-        self.all_keys = {}
+        self.all_keys = []
 
         if datatype == 'lmdb':
             self.env = lmdb.open(dataroot, readonly=True, lock=False,
@@ -23,11 +23,12 @@ class LRHRDataset(Dataset):
             with self.env.begin(write=False) as txn:
                 self.dataset_len = int(txn.get("length".encode("utf-8")))
                 self.all_keys = [
-                    index
+                    index.encode("utf-8")
                     for key in txn.cursor().iternext(keys=True, values=False)
-                    for index in [key[key.rfind("_"):]]
+                    for index in [key[key.rfind(b"_")+1:]]
                     if index.isdigit()
                 ]
+                assert len(self.all_keys), "There are no images in this database"
 
             if self.data_len <= 0:
                 self.data_len = self.dataset_len
@@ -88,6 +89,8 @@ class LRHRDataset(Dataset):
                             'lr_{}_{}'.format(
                                 self.l_res, str(new_index).zfill(5)).encode('utf-8')
                         )
+                assert hr_img_bytes, f"HR image {index} is missing"
+                assert sr_img_bytes, f"SR image {index} is missing"
                 img_HR = Image.open(BytesIO(hr_img_bytes)).convert("RGB")
                 img_SR = Image.open(BytesIO(sr_img_bytes)).convert("RGB")
                 if self.need_LR:
