@@ -14,6 +14,7 @@ class LRHRDataset(Dataset):
         self.data_len = data_len
         self.need_LR = need_LR
         self.split = split
+        self.all_keys = {}
 
         if datatype == 'lmdb':
             self.env = lmdb.open(dataroot, readonly=True, lock=False,
@@ -21,6 +22,13 @@ class LRHRDataset(Dataset):
             # init the datalen
             with self.env.begin(write=False) as txn:
                 self.dataset_len = int(txn.get("length".encode("utf-8")))
+                self.all_keys = [
+                    index
+                    for key in txn.cursor().iternext(keys=True, values=False)
+                    for index in [key[key.rfind("_"):]]
+                    if index.isdigit()
+                ]
+
             if self.data_len <= 0:
                 self.data_len = self.dataset_len
             else:
@@ -65,8 +73,8 @@ class LRHRDataset(Dataset):
                             self.l_res, str(index).zfill(5)).encode('utf-8')
                     )
                 # skip the invalid index
-                while (hr_img_bytes is None) or (sr_img_bytes is None):
-                    new_index = random.randint(0, self.data_len-1)
+                if (hr_img_bytes is None) or (sr_img_bytes is None):
+                    new_index = random.choice(self.all_keys)
                     hr_img_bytes = txn.get(
                         'hr_{}_{}'.format(
                             self.r_res, str(new_index).zfill(5)).encode('utf-8')
